@@ -1,0 +1,55 @@
+        _____ ________  ________              
+       / ___//  _/ __ \/ __/ __/__  _____  0.3.2-beta   
+ ______\__ \ / // /_/ / /_/ /_/ _ \/ ___/_____
+/_____/__/ // // ____/ __/ __/  __/ /  /_____/
+     /____/___/_/   /_/ /_/  \___/_/          
+                                              
+ SIPffer: Un sniffer para el protocolo SIP
+ por XenoMuta	<xenomuta[arroba]phreaker.net>
+             	<xenomuta[arroba]tuxfamily.org>
+
+ Metylxantina 256mg 2009 - http://xenomuta.tuxfamily.org/
+===========================================================
+
+ CONTENIDO
+ ---------
+ 1)Que es SIPffer?
+ 2)Obteniendo SIPffer
+ 3)Compilando SIPffer
+ 4)Creditos  
+
+ 1) Que es SIPffer?
+ ------------------
+ SIPffer ( SIP + Sniffer ) es un sniffer que facilita
+ la deteccion de errores y depuracion de problemas en
+ implementaciones SIP (switches, SBCs, proxies SIP, etc..)
+ que facilite filtrar detalles del paquete SIP en lugar de
+ solo detalles del header IP y TCP/IP.
+
+ Esto es particularmente util cuando todos tus usuarios se
+ encuentran detras de un SBC y en tu PBX lo vez a todos con
+ la misma IP.
+
+ Se distribuye bajo la licencia GPLv3
+
+
+ 2) Obteniendo SIPffer
+ ---------------------
+ SIPffer se obtiene en http://xenomuta.tuxfamily.org/sipffer/
+
+ 3) Compilando SIPffer
+ ---------------------
+ Por el momento SIPffer solo depende de libpcap >= 0.8.
+ Compilando:
+	gcc -lpcap sipffer.c -o sipffer
+
+ 4) Creditos
+ -----------
+ - Al verbo de Dios, Jesus. El primer y mejor coder del universo.
+ - La comunidad de Digium / Asterisk. Producto excelente que
+ me inspiro a desarrollar este producto ( especialmente por la
+ funcion sip set debug de chan_sip.c ).
+ - Juan Ases Garcia, por sus excelentes sugerencias y feedback.
+ 
+
+
