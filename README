@@ -1,9 +1,9 @@
-        _____ ________  ________              
-       / ___//  _/ __ \/ __/ __/__  _____  0.3.2-beta   
+        _____ ________  ________
+       / ___//  _/ __ \/ __/ __/__  _____
  ______\__ \ / // /_/ / /_/ /_/ _ \/ ___/_____
 /_____/__/ // // ____/ __/ __/  __/ /  /_____/
-     /____/___/_/   /_/ /_/  \___/_/          
-                                              
+     /____/___/_/   /_/ /_/  \___/_/
+
  SIPffer: Un sniffer para el protocolo SIP
  por XenoMuta	<xenomuta [arroba] gmail.com>
 
@@ -15,7 +15,7 @@
  1)Que es SIPffer?
  2)Obteniendo SIPffer
  3)Compilando SIPffer
- 4)Creditos  
+ 4)Creditos
 
  1) Que es SIPffer?
  ------------------
@@ -46,10 +46,10 @@
  -----------
  - Al verbo de Dios, Jesus. El primer y mejor coder del universo.
  - La comunidad de Digium / Asterisk, por un producto/servicio
- excelente que me inspiro a desarrollar este producto 
+ excelente que me inspiro a desarrollar este producto
  ( especialmente por la funcion sip set debug de chan_sip.c ).
  - Nathan Robles como mi mas notorio tester... ;)
  - Juan Ases Garcia, por sus excelentes sugerencias y feedback.
- 
+
 
 

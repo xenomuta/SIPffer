@@ -1,7 +1,7 @@
 /*
  *    SIPffer: Un sniffer del protocolo SIP
- *    version: 0.3
- *    XenoMuta / Methylxantina 256mg xenmuta[arroba]phreaker.net http://xenomuta.tuxfamily.org/
+ *    version: 0.3.4
+ *    XenoMuta / Methylxantina 256mg - http://xenomuta.com - xenmuta[arroba]gmail.com
  *
  *    SIPffer is free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
@@ -17,12 +17,12 @@
  *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#define VERSION "0.3.2-beta"
+#define VERSION "0.3.4"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <net/bpf.h>
+#include <pcap/bpf.h>
 #include <pcap.h>
 #include <signal.h>
 #include <netinet/in.h>
@@ -63,7 +63,7 @@ struct bpf_program fp;
 
 /*
  * me_Quite(): Funcion que captura senales UNIX y limpia todo antes de salir
- * 
+ *
  * Parametros:
  * - sig:  Senal capturada por el Sistema.
  */
@@ -80,8 +80,8 @@ void me_Quite(int sig) {
 
 /*
  * manga_hora(): Retorna la fecha-hora del paquete capturado en formato
- * Y-m-d hh:mm:ss 
- * 
+ * Y-m-d hh:mm:ss
+ *
  * Parametros:
  * - cabeza:  Cabezera del paquete capturado.
  */
@@ -91,7 +91,7 @@ char *manga_hora(struct timeval cap_tv) {
 
 	if (!cap_tv.tv_sec) return "n/a";
 	curtime=cap_tv.tv_sec;
-	
+
 	buff = (char *)malloc(30); memset(buff, 0, 30);
 	strftime(buff, 30, "%Y-%m-%d %T", localtime(&curtime));
 	return buff;
@@ -100,7 +100,7 @@ char *manga_hora(struct timeval cap_tv) {
 
 /*
  * manga_cabecera_SIP(): Retorna el valor de un cabecera x en un paquete SIP
- * 
+ *
  * Parametros:
  * - paquete:  paquete crudo
  * - cabecera:    el cabeceradeseado
@@ -110,12 +110,12 @@ char *manga_cabecera_SIP(const u_char *paquete, char *quiero_cabecera) {
 	char *crudo, *linea, *cabecera = NULL;
 
 	crudo = strdup((char *)paquete);
-	linea = strtok(crudo, "\r\n"); 
+	linea = strtok(crudo, "\r\n");
 
 	for (;;) {
 		linea = strtok(NULL, "\r\n");
 		if (!linea) break;
-		
+
 		if ((strchr(linea, ':'))) {
 			memset(strchr(linea, ':'), 0, 1);
 			cabecera = linea;
@@ -129,7 +129,7 @@ char *manga_cabecera_SIP(const u_char *paquete, char *quiero_cabecera) {
 
 /*
  * manga_paquete_SIP(): Extrae la data SIP del paquete
- * 
+ *
  * Parametros:
  * - data: Datos pasados a la funcion por parte de pcap_loop()
  * - h:    Cabezera del paquete capturado
@@ -279,8 +279,8 @@ int main(int argc, char *argv[]) {
 		strncat(filtrofinal, " and ", sizeof(filtrofinal));
 		strncat(filtrofinal, filtro, sizeof(filtrofinal));
 	}
-	
-	// Preparate las trampas de senal 
+
+	// Preparate las trampas de senal
 	signal(SIGABRT, &me_Quite);
 	signal(SIGTERM, &me_Quite);
 	signal(SIGSTOP, &me_Quite);
@@ -311,12 +311,12 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	// Compila el filtro 
+	// Compila el filtro
 	if (pcap_compile(sniff, &fp, filtrofinal, 1, mask) == -1) {
 		fprintf(stderr, "ERROR: No se pudo parsear el fitro \"%s\": %s\n\n", filtro, pcap_geterr(sniff));
 		return 2;
 	}
-	
+
 	// Aplica el filtro a la captura
 	if (pcap_setfilter(sniff, &fp) == -1) {
 		fprintf(stderr, "ERROR: No se pudo aplicar el filtro \"%s\": %s\n\n", filtro, pcap_geterr(sniff));
@@ -334,7 +334,7 @@ int main(int argc, char *argv[]) {
 		else fprintf(stderr, "\n");
 	}
 
-	// Captura y parsea 
+	// Captura y parsea
 	int res = pcap_loop(sniff, 0, manga_paquete_SIP, NULL);
 
 	pcap_freecode(&fp);
