@@ -11,5 +11,5 @@ clean:
 	rm -f sipffer sipffer.o core
 
 install: sipffer
-  @cp sipffer /usr/bin
-  @echo 'Done!'
+	@cp sipffer /usr/bin
+	@echo 'Done!'
