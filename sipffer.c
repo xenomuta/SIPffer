@@ -299,11 +299,9 @@ int main(int argc, char *argv[]) {
 	char filtrofinal[2048];
 	memset(filtrofinal, 0, 2048);
 
-	strncat(filtrofinal, "udp and port ", sizeof(filtrofinal));
-	strncat(filtrofinal, port, sizeof(filtrofinal));
+	snprintf((char *)&filtrofinal, sizeof(filtrofinal), "udp and port %s", port);
 	if (strlen(filtro) > 0) {
-		strncat(filtrofinal, " and ", sizeof(filtrofinal));
-		strncat(filtrofinal, filtro, sizeof(filtrofinal));
+		snprintf((char *)&filtrofinal, sizeof(filtrofinal), " and %s", filtro);
 	}
 
 	// Preparate las trampas de senal
