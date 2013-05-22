@@ -1,6 +1,7 @@
 /*
  *    SIPffer: Un sniffer del protocolo SIP
- *    version: 0.3.4
+ *    version: 0.4
+ *    https://github.com/xenomuta/SIPffer
  *    XenoMuta / Methylxantina 256mg - http://xenomuta.com - xenmuta[arroba]gmail.com
  *
  *    SIPffer is free software: you can redistribute it and/or modify
@@ -17,7 +18,7 @@
  *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#define VERSION "0.3.4"
+#define VERSION "0.4"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,6 +51,9 @@ static char port[5];
 static char metodo[128];
 /* Respuesta SIP */
 static char respuesta[3];
+/* Seguir paguete SIP */
+static char seguir;
+static char seguir_id[2048];
 /* Cabecera SIP */
 static char cabecera[128];
 /* Paquetes capturados */
@@ -146,11 +150,12 @@ void manga_paquete_SIP(u_char *data, const struct pcap_pkthdr *h, const u_char *
 	cip = (struct iphdr *)(p+ETH_LEN);
 	// Ignora el paquete si no capturo bien o si esta recortado o si no es IPV4
 	if ((!p) || (h->len <= (ETH_LEN+IP_MIN_LEN)) || ((unsigned char)cip->version != 4)) {
-		if (DEBUG) fprintf(stderr, "Paquete Invalido\n");
+		if (DEBUG) fprintf(stderr, "Paquete Inválido\n");
 	} else {
 		paquete = (u_char *)malloc(h->len);
 		memset((char *)paquete, 0, h->caplen);
 		strncpy((char *)paquete, (char *)(p + ETH_LEN + IP_MIN_LEN + 8), h->len - (ETH_LEN + IP_MIN_LEN + 8));
+		paquete[h->len - (ETH_LEN + IP_MIN_LEN + 8)] = 0x00;
 
 		caplen = h->caplen;
 		if ((strlen(metodo) > 0) && strncmp((char *)paquete, metodo, strlen(metodo))) return;
@@ -162,6 +167,22 @@ void manga_paquete_SIP(u_char *data, const struct pcap_pkthdr *h, const u_char *
 		if (strlen(cadena) > 0) {
 			if (!strstr((char *)paquete, (char *)&cadena)) return;
 			if ((strlen(cabecera) > 0) && !strstr(manga_cabecera_SIP(paquete, cabecera), cadena)) return;
+		}
+		if (seguir) {
+			if (seguir == 1) {
+				if (!(seguir_id = manga_cabecera_SIP(paquete, "Call-ID")) {
+					seguir_id = manga_cabecera_SIP(paquete, "call-id");
+				}
+				if (seguir_id) {
+					seguir = 2;
+				} else return;
+			}
+			if (seguir == 2) {
+				char *call_id = manga_cabecera_SIP(paquete, "Call-ID");
+				if (!call_id)	call_id = manga_cabecera_SIP(paquete, "call-id");
+				if (!call_id)	return;
+				if (strcmp(call_id, seguir_id)) return;
+			}
 		}
 
 		mostrados++;
@@ -178,7 +199,7 @@ void manga_paquete_SIP(u_char *data, const struct pcap_pkthdr *h, const u_char *
  * payola(): El nombre lo dice todo
  */
 void payola() {
-	fprintf(stderr, "SIPffer v%s: Un sniffer para el protocolo SIP\nXenoMuta / Methylxantina 256mg <xenomuta%cphreaker.net>\nhttp://xenomuta.tuxfamily.org\n\n", VERSION, 64);
+	fprintf(stderr, "SIPffer v%s: Un sniffer para el protocolo SIP\nXenoMuta.com - https://github.com/xenomuta/SIPffer\n\n", VERSION, 64);
 }
 
 /*
@@ -195,6 +216,7 @@ void usage() {
 	fprintf(stderr, " -m metodo:      \tFiltra por metodo SIP (INVITE,REGISTER,\n");
 	fprintf(stderr, "                 \t\tACK,CANCEL,BYE o OPTIONS)\n");
 	fprintf(stderr, " -r respuesta:   \tFiltra por respuesta (numerica) (200, 404, etc...)\n");
+	fprintf(stderr, " -s seguir:      \tCapturar y perseguir paquetes relacionados\n");
 	fprintf(stderr, " -c cabecera     \tBuscar la cadena unicamente en la cabecera especificada\n");
 	fprintf(stderr, "                 \t\tej. (From, To, Contact, etc...)\n");
 	fprintf(stderr, " -h              \tMuestra esta pantalla de ayuda\n\n\n");
@@ -216,6 +238,7 @@ int main(int argc, char *argv[]) {
 	memset((char *)&cadena, 0, sizeof(cadena));
 	memset((char *)&cabecera, 0, sizeof(cabecera));
 	memset((char *)&filtro, 0, sizeof(filtro));
+	seguir = 0;
 
 	if (argc < 3) {
 		usage();
@@ -260,6 +283,10 @@ int main(int argc, char *argv[]) {
 		}
 		if (!strcmp(argv[i], "-r")) {
 			strncpy((char *)&respuesta, argv[++i], sizeof(respuesta));
+			continue;
+		}
+		if (!strcmp(argv[i], "-s")) {
+			seguir = 1;
 			continue;
 		}
 	}
@@ -332,6 +359,9 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "Solo paquetes con la cadena: \"%s\"", cadena);
 		if (strlen(cabecera) > 0) fprintf(stderr, " en la cabecera: %s\n", cabecera);
 		else fprintf(stderr, "\n");
+	}
+	if (seguir) {
+		fprintf(stderr, "Perseguir paquetes relacionados por Call-ID al primer paquete capturado\n");
 	}
 
 	// Captura y parsea
