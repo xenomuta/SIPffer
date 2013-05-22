@@ -52,8 +52,7 @@ static char metodo[128];
 /* Respuesta SIP */
 static char respuesta[3];
 /* Seguir paguete SIP */
-static char seguir;
-static char seguir_id[2048];
+static char seguir, *seguir_id;
 /* Cabecera SIP */
 static char cabecera[128];
 /* Paquetes capturados */
@@ -155,7 +154,7 @@ void manga_paquete_SIP(u_char *data, const struct pcap_pkthdr *h, const u_char *
 		paquete = (u_char *)malloc(h->len);
 		memset((char *)paquete, 0, h->caplen);
 		strncpy((char *)paquete, (char *)(p + ETH_LEN + IP_MIN_LEN + 8), h->len - (ETH_LEN + IP_MIN_LEN + 8));
-		paquete[h->len - (ETH_LEN + IP_MIN_LEN + 8)] = 0x00;
+		memset((char *)paquete + (h->len - (ETH_LEN + IP_MIN_LEN + 8)), 0, 1);
 
 		caplen = h->caplen;
 		if ((strlen(metodo) > 0) && strncmp((char *)paquete, metodo, strlen(metodo))) return;
@@ -170,7 +169,7 @@ void manga_paquete_SIP(u_char *data, const struct pcap_pkthdr *h, const u_char *
 		}
 		if (seguir) {
 			if (seguir == 1) {
-				if (!(seguir_id = manga_cabecera_SIP(paquete, "Call-ID")) {
+				if (!(seguir_id = manga_cabecera_SIP(paquete, "Call-ID"))) {
 					seguir_id = manga_cabecera_SIP(paquete, "call-id");
 				}
 				if (seguir_id) {
