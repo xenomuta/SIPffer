@@ -125,6 +125,7 @@ char *manga_cabecera_SIP(const u_char *paquete, char *quiero_cabecera) {
 			if (!strncasecmp(quiero_cabecera, cabecera, strlen(quiero_cabecera))) return (cabecera+strlen(cabecera) + 2);
 		}
 	}
+	if (!cabecera) return NULL;
 	cabecera[0] = 0x00;
 	return cabecera;
 }
@@ -154,7 +155,7 @@ void manga_paquete_SIP(u_char *data, const struct pcap_pkthdr *h, const u_char *
 		paquete = (u_char *)malloc(h->len);
 		memset((char *)paquete, 0, h->caplen);
 		strncpy((char *)paquete, (char *)(p + ETH_LEN + IP_MIN_LEN + 8), h->len - (ETH_LEN + IP_MIN_LEN + 8));
-		memset((char *)paquete + (h->len - (ETH_LEN + IP_MIN_LEN + 8)), 0, 1);
+		memset((char *)paquete + (h->len - (ETH_LEN + IP_MIN_LEN + (!strcmp(dev, "any")?6:8))), 0, 1);
 
 		caplen = h->caplen;
 		if ((strlen(metodo) > 0) && strncmp((char *)paquete, metodo, strlen(metodo))) return;
