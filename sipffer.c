@@ -238,10 +238,9 @@ int main(int argc, char *argv[]) {
 	memset((char *)&cabecera, 0, sizeof(cabecera));
 	memset((char *)&filtro, 0, sizeof(filtro));
 	seguir = 0;
-
+	/* Snifea en todas por default */
 	if (argc < 3) {
-		usage();
-		return 2;
+		strncpy((char *)&dev, "any", sizeof(dev));
 	}
 
 	for (i = 1; i < argc; i++) {
