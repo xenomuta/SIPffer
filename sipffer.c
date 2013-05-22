@@ -242,7 +242,10 @@ int main(int argc, char *argv[]) {
 	strncpy((char *)&dev, "any", sizeof(dev));
 
 	for (i = 1; i < argc; i++) {
-		if (argv[i][0] != '-') {
+		if (!strcmp(argv[i], "-s")) {
+			seguir = 1;
+			continue;
+		} else if (argv[i][0] != '-') {
 			strncpy((char *)&cadena, argv[i], sizeof(cadena));
 			continue;
 		} else if ((argv[i][0] == '-') && (i + 1 == argc)) {
@@ -279,10 +282,6 @@ int main(int argc, char *argv[]) {
 		}
 		if (!strcmp(argv[i], "-r")) {
 			strncpy((char *)&respuesta, argv[++i], sizeof(respuesta));
-			continue;
-		}
-		if (!strcmp(argv[i], "-s")) {
-			seguir = 1;
 			continue;
 		}
 	}
