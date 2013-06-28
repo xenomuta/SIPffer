@@ -45,8 +45,6 @@
 static char dev[32];
 /* Archivo pcap */
 static char archivo[128];
-/* Archivo pcap salida */
-static char archivoO[128];
 /* Cadena de Busqueda */
 static char cadena[2048];
 /* Filtro BPF pcap */
@@ -145,7 +143,7 @@ char *manga_cabecera_SIP(const u_char *paquete, char *quiero_cabecera) {
  * - h:    Cabezera del paquete capturado
  * - p:    Data serializada del paquete
  */
-void manga_paquete_SIP(u_cxhar *data, const struct pcap_pkthdr *h, const u_char *p) {
+void manga_paquete_SIP(u_char *data, const struct pcap_pkthdr *h, const u_char *p) {
 	struct iphdr *cip;			// La IP capturada
 	const u_char *paquete;	// La data decapitada del paquete capturado
 	unsigned int caplen;
@@ -242,7 +240,6 @@ int main(int argc, char *argv[]) {
 	strncpy((char *)&port, "5060", sizeof(port));
 	memset((char *)&dev, 0, sizeof(dev));
 	memset((char *)&archivo, 0, sizeof(archivo));
-	memset((char *)&archivoO, 0, sizeof(archivoO));
 	memset((char *)&metodo, 0, sizeof(metodo));
 	memset((char *)&respuesta, 0, sizeof(respuesta));
 	memset((char *)&cadena, 0, sizeof(cadena));
@@ -270,10 +267,6 @@ int main(int argc, char *argv[]) {
 		}
 		if (!strcmp(argv[i], "-a")) {
 			strncpy((char *)&archivo, argv[++i], sizeof(archivo));
-			continue;
-		}
-		if (!strcmp(argv[i], "-e")) {
-			strncpy((char *)&archivoO, argv[++i], sizeof(archivoO));
 			continue;
 		}
 		if (!strcmp(argv[i], "-i")) {
