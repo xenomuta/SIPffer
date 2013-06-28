@@ -18,12 +18,16 @@
  *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#define VERSION "0.4"
+#define VERSION "0.4.2"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef __APPLE__
+#include <net/bpf.h>
+#else
 #include <pcap/bpf.h>
+#endif
 #include <pcap.h>
 #include <signal.h>
 #include <netinet/in.h>
@@ -41,6 +45,8 @@
 static char dev[32];
 /* Archivo pcap */
 static char archivo[128];
+/* Archivo pcap salida */
+static char archivoO[128];
 /* Cadena de Busqueda */
 static char cadena[2048];
 /* Filtro BPF pcap */
@@ -71,7 +77,7 @@ struct bpf_program fp;
  * - sig:  Senal capturada por el Sistema.
  */
 void me_Quite(int sig) {
-	fprintf(stderr, "\x1b[0m\n-=[ CORTE! ]=-\n\n");
+	fprintf(stderr, "\x1b[0;37m\n-=[ CORTE! ]=-\n\n");
 	pcap_breakloop(sniff);
 	pcap_freecode(&fp);
 	pcap_close(sniff);
@@ -139,12 +145,13 @@ char *manga_cabecera_SIP(const u_char *paquete, char *quiero_cabecera) {
  * - h:    Cabezera del paquete capturado
  * - p:    Data serializada del paquete
  */
-void manga_paquete_SIP(u_char *data, const struct pcap_pkthdr *h, const u_char *p) {
-	struct iphdr *cip;					// La IP capturada
+void manga_paquete_SIP(u_cxhar *data, const struct pcap_pkthdr *h, const u_char *p) {
+	struct iphdr *cip;			// La IP capturada
 	const u_char *paquete;	// La data decapitada del paquete capturado
 	unsigned int caplen;
 
 	capturados++;
+	// La interfaz any tiene 2 bytes adicionales en su header
 	if (!strcmp(dev, "any")) p+=2;
 
 	cip = (struct iphdr *)(p+ETH_LEN);
@@ -189,8 +196,8 @@ void manga_paquete_SIP(u_char *data, const struct pcap_pkthdr *h, const u_char *
 		u_char *srcip = (u_char *)&cip->saddr;
 		u_char *dstip = (u_char *)&cip->daddr;
 
-		printf("\x1b[1m\x1b[32m<==[%d bytes]==[%s] : %d.%d.%d.%d => ", caplen, manga_hora(h->ts), srcip[0], srcip[1], srcip[2], srcip[3]);
-		printf("%d.%d.%d.%d ====\n\x1b[37m%s\n\x1b[32m=================>\n\n\x1b[0m", dstip[0], dstip[1], dstip[2], dstip[3], paquete);
+		printf("\x1b[1;32m<==[%d bytes]==[%s] : %d.%d.%d.%d => ", caplen, manga_hora(h->ts), srcip[0], srcip[1], srcip[2], srcip[3]);
+		printf("%d.%d.%d.%d ====\n\x1b[1;37m%s\n\x1b[1;32m=================>\n\n\x1b[0;37m", dstip[0], dstip[1], dstip[2], dstip[3], paquete);
 	}
 }
 
@@ -216,7 +223,9 @@ void usage() {
 	fprintf(stderr, " -m metodo:      \tFiltra por metodo SIP (INVITE,REGISTER,\n");
 	fprintf(stderr, "                 \t\tACK,CANCEL,BYE o OPTIONS)\n");
 	fprintf(stderr, " -r respuesta:   \tFiltra por respuesta (numerica) (200, 404, etc...)\n");
-	fprintf(stderr, " -s seguir:      \tCapturar y perseguir paquetes relacionados\n");
+	// /* Pronto ;) , estoy muy bago */
+	// fprintf(stderr, " -e archivo:     \tEscribe captura de paquetes a archivo\n");
+	fprintf(stderr, " -s:             \tCapturar y perseguir paquetes relacionados\n");
 	fprintf(stderr, " -c cabecera     \tBuscar la cadena unicamente en la cabecera especificada\n");
 	fprintf(stderr, "                 \t\tej. (From, To, Contact, etc...)\n");
 	fprintf(stderr, " -h              \tMuestra esta pantalla de ayuda\n\n\n");
@@ -233,6 +242,7 @@ int main(int argc, char *argv[]) {
 	strncpy((char *)&port, "5060", sizeof(port));
 	memset((char *)&dev, 0, sizeof(dev));
 	memset((char *)&archivo, 0, sizeof(archivo));
+	memset((char *)&archivoO, 0, sizeof(archivoO));
 	memset((char *)&metodo, 0, sizeof(metodo));
 	memset((char *)&respuesta, 0, sizeof(respuesta));
 	memset((char *)&cadena, 0, sizeof(cadena));
@@ -243,13 +253,10 @@ int main(int argc, char *argv[]) {
 	strncpy((char *)&dev, "any", sizeof(dev));
 
 	for (i = 1; i < argc; i++) {
-		if (!strcmp(argv[i], "-s")) {
-			seguir = 1;
-			continue;
-		} else if (argv[i][0] != '-') {
+		if (argv[i][0] != '-') {
 			strncpy((char *)&cadena, argv[i], sizeof(cadena));
 			continue;
-		} else if ((argv[i][0] == '-') && (i + 1 == argc)) {
+		} else if ((argv[i][0] == '-') && strcmp(argv[i], "-s") && (i + 1 == argc)) {
 			usage();
 			return 2;
 		}
@@ -257,8 +264,16 @@ int main(int argc, char *argv[]) {
 			usage();
 			return 0;
 		}
+		if (!strcmp(argv[i], "-s")) {
+			seguir = 1;
+			continue;
+		}
 		if (!strcmp(argv[i], "-a")) {
 			strncpy((char *)&archivo, argv[++i], sizeof(archivo));
+			continue;
+		}
+		if (!strcmp(argv[i], "-e")) {
+			strncpy((char *)&archivoO, argv[++i], sizeof(archivoO));
 			continue;
 		}
 		if (!strcmp(argv[i], "-i")) {
