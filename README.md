@@ -1,7 +1,7 @@
 # SIPffer
- **SIPffer** (_SIP + sniffer_): A SIP protocol sniffer for quick and smart troubleshooting.
+**SIPffer** (SIP + sniffer): A SIP protocol sniffer for quick and smart troubleshooting.
 
- *XenoMuta <xenomuta@gmail.com> - Metylxantina 256mg 2013 - <http://xenomuta.com/>*
+*XenoMuta <xenomuta@gmail.com> - Metylxantina 256mg 2013 - <http://xenomuta.com/>*
 
 ### What's SIPffer
 
