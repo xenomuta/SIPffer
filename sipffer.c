@@ -20,7 +20,7 @@
  */
 #define VERSION "0.4.5"
 
-#ifdef __LINUX__
+#ifdef __GNUC__
 #define DEFAULT_NIC "any"
 #else
 #define DEFAULT_NIC "en0"
@@ -363,7 +363,7 @@ int main(int argc, char *argv[]) {
 		}
 		// Averigua nuestra IP/Mascara
 		if (pcap_lookupnet(dev, &ip, &mask, errbuf) == -1) {
-			fprintf(stderr, "ERROR: Can't find IP/Netmask for interface '%s'\n\n", dev);
+			fprintf(stderr, "WARNING: Can't find IP/Netmask for interface '%s'\n\n", dev);
 			mask = 0;
 			ip = 0;
 		}
