@@ -332,10 +332,10 @@ int main(int argc, char *argv[]) {
 	// Fabrica el filtro
 	char filtrofinal[2048];
 	memset(filtrofinal, 0, 2048);
-
-	snprintf((char *)&filtrofinal, sizeof(filtrofinal), "udp and port %s", port);
 	if (strlen(filtro) > 0) {
-		snprintf((char *)&filtrofinal, sizeof(filtrofinal), "%s and %s", filtrofinal, filtro);
+		snprintf((char *)&filtrofinal, sizeof(filtrofinal), "udp and port %s and %s", port, filtro);
+	} else {
+		snprintf((char *)&filtrofinal, sizeof(filtrofinal), "udp and port %s", port);
 	}
 
 	// Preparate las trampas de senal
