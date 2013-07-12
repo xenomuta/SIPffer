@@ -306,7 +306,7 @@ int main(int argc, char *argv[]) {
 
 	snprintf((char *)&filtrofinal, sizeof(filtrofinal), "udp and port %s", port);
 	if (strlen(filtro) > 0) {
-		snprintf((char *)&filtrofinal, sizeof(filtrofinal), " and %s", filtro);
+		snprintf((char *)&filtrofinal, sizeof(filtrofinal), "%s and %s", filtrofinal, filtro);
 	}
 
 	// Preparate las trampas de senal
