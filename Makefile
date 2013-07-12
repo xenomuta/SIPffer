@@ -1,8 +1,8 @@
 CC=gcc
 CFLAGS=-O2
-LIBS=-lpcap
+LIBS=-lpcap -lpcre
 
-sipffer:
+sipffer: sipffer.o
 	gcc -o $@ $@.c $(CFLAGS) $(LIBS)
 
 .PHONY: clean
