@@ -6,7 +6,7 @@
 ### What's SIPffer
 
 SIPffer is an easy to use tool for troubleshooting issues with SIP traffice (switches, proxies, SBCs, VoIP Servers, PBXs, etc..).
-It comes very handy in high traffic environments to do quick and smart diagnostic on remote ends, terminals or otherwise  hard to install WireShark or other heavy all-purpose traffic analysis tools.
+It comes very handy in high traffic and remote (terminal) environments to do quick and smart diagnostic on remote ends, terminals compared to otherwise harder to run or install WireShark or other heavy all-purpose traffic analysis tools.
 
 It is distributed under the GPLv3 license.
 
@@ -17,7 +17,7 @@ It is distributed under the GPLv3 license.
 * SIP session tracking (option `-s` or `--follow`).
 * Offline analysis of tcpdump (`.pcap`) capture files.
 * Filter by SIP method (`REGISTER`, `INVITE`, `OPTIONS`, `BYE`, etc).
-* Filter by SIP response (`200`, `404`, `503`, etc).
+* Filter by SIP response (`200`, `302`, `404`, etc).
 * Offline analysis of tcpdump (`.pcap`) capture files.
 
 ### Installing
@@ -29,7 +29,7 @@ make
 sudo make install
 ```
 
-_**NOTE**: SIPffer depends on `libpcap` (>= 0.8) and `libpcre` to compile_.
+**NOTE**: _SIPffer depends on `libpcap` (>= 0.8) and `libpcre` to compile._
 
 ### Acknowledgment
 
