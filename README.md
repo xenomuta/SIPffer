@@ -1,5 +1,5 @@
 # SIPffer
- **SIPffer** (*SIP + sniffer*): A SIP protocol sniffer for quick and smart troubleshooting.
+ **SIPffer** (_SIP + sniffer_): A SIP protocol sniffer for quick and smart troubleshooting.
 
  *XenoMuta <xenomuta@gmail.com> - Metylxantina 256mg 2013 - <http://xenomuta.com/>*
 
@@ -29,7 +29,7 @@ make
 sudo make install
 ```
 
-***NOTE**: SIPffer depends on `libpcap` (>= 0.8) and `libpcre` to compile*.
+_**NOTE**: SIPffer depends on `libpcap` (>= 0.8) and `libpcre` to compile_.
 
 ### Acknowledgment
 
