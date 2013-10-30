@@ -158,53 +158,62 @@ void obten_paquete_SIP(u_char *data, const struct pcap_pkthdr *h, const u_char *
 
 	capturados++;
 	// La interfaz any tiene 2 bytes adicionales en su header
-	if (!strcmp(dev, "any")) p+=2;
+	if (!strcmp(dev, "any")) p += 2;
 
 	cip = (struct iphdr *)(p+ETH_LEN);
 	// Ignora el paquete si no capturo bien o si esta recortado o si no es IPV4
 	if ((!p) || (h->len <= (ETH_LEN+IP_MIN_LEN)) || ((unsigned char)cip->version != 4)) {
-		if (DEBUG) fprintf(stderr, "Invalid Packet\n");
-	} else {
-		paquete = (u_char *)malloc(h->len);
-		memset((char *)paquete, 0, h->caplen);
-		strncpy((char *)paquete, (char *)(p + ETH_LEN + IP_MIN_LEN + 8), h->len - (ETH_LEN + IP_MIN_LEN + 8));
-		memset((char *)paquete + (h->len - (ETH_LEN + IP_MIN_LEN + (!strcmp(dev, "any")?10:8))), 0, 1);
-
-		caplen = h->caplen;
-		if ((strlen(metodo) > 0) && strncmp((char *)paquete, metodo, strlen(metodo))) return;
-		if (strlen(respuesta) > 0) {
-			if (caplen < 4) return;
-			if (strncmp((char *)paquete, "SIP/", 4)) return;
-			if (strncmp((char *)paquete + 8, respuesta, 3)) return;
+		if (p && p + 1) {
+			p += 2;
+		} else {
+			if (DEBUG) fprintf(stderr, "Invalid Packet\n");
+			return;
 		}
-		if (strlen(regexp) > 0) {
-			if ((strlen(cabecera) > 0) && !rx_match(obten_cabecera_SIP(paquete, cabecera))) return;
-			if (!rx_match((char *)paquete)) return;
+		if ((!p) || (h->len <= (ETH_LEN+IP_MIN_LEN)) || ((unsigned char)cip->version != 4)) {
+			if (DEBUG) fprintf(stderr, "Invalid Packet\n");
+			return;
 		}
-		if (seguir) {
-			if (seguir == 1) {
-				if (!(seguir_id = obten_cabecera_SIP(paquete, "Call-ID"))) {
-					seguir_id = obten_cabecera_SIP(paquete, "call-id");
-				}
-				if (seguir_id) {
-					seguir = 2;
-				} else return;
-			}
-			if (seguir == 2) {
-				char *call_id = obten_cabecera_SIP(paquete, "Call-ID");
-				if (!call_id)	call_id = obten_cabecera_SIP(paquete, "call-id");
-				if (!call_id)	return;
-				if (strcmp(call_id, seguir_id)) return;
-			}
-		}
-
-		mostrados++;
-		u_char *srcip = (u_char *)&cip->saddr;
-		u_char *dstip = (u_char *)&cip->daddr;
-
-		printf("\x1b[1;32m<==[%d bytes]==[%s] : %d.%d.%d.%d => ", caplen, obtener_hora(h->ts), srcip[0], srcip[1], srcip[2], srcip[3]);
-		printf("%d.%d.%d.%d ====\n\x1b[1;37m%s\n\x1b[1;32m=================>\n\n\x1b[0;37m", dstip[0], dstip[1], dstip[2], dstip[3], paquete);
 	}
+
+	paquete = (u_char *)malloc(h->len);
+	memset((char *)paquete, 0, h->caplen);
+	strncpy((char *)paquete, (char *)(p + ETH_LEN + IP_MIN_LEN + 8), h->len - (ETH_LEN + IP_MIN_LEN + 8));
+	memset((char *)paquete + (h->len - (ETH_LEN + IP_MIN_LEN + (!strcmp(dev, "any")?10:8))), 0, 1);
+
+	caplen = h->caplen;
+	if ((strlen(metodo) > 0) && strncmp((char *)paquete, metodo, strlen(metodo))) return;
+	if (strlen(respuesta) > 0) {
+		if (caplen < 4) return;
+		if (strncmp((char *)paquete, "SIP/", 4)) return;
+		if (strncmp((char *)paquete + 8, respuesta, 3)) return;
+	}
+	if (strlen(regexp) > 0) {
+		if ((strlen(cabecera) > 0) && !rx_match(obten_cabecera_SIP(paquete, cabecera))) return;
+		if (!rx_match((char *)paquete)) return;
+	}
+	if (seguir) {
+		if (seguir == 1) {
+			if (!(seguir_id = obten_cabecera_SIP(paquete, "Call-ID"))) {
+				seguir_id = obten_cabecera_SIP(paquete, "call-id");
+			}
+			if (seguir_id) {
+				seguir = 2;
+			} else return;
+		}
+		if (seguir == 2) {
+			char *call_id = obten_cabecera_SIP(paquete, "Call-ID");
+			if (!call_id)	call_id = obten_cabecera_SIP(paquete, "call-id");
+			if (!call_id)	return;
+			if (strcmp(call_id, seguir_id)) return;
+		}
+	}
+
+	mostrados++;
+	u_char *srcip = (u_char *)&cip->saddr;
+	u_char *dstip = (u_char *)&cip->daddr;
+
+	printf("\x1b[1;32m<==[%d bytes]==[%s] : %d.%d.%d.%d => ", caplen, obtener_hora(h->ts), srcip[0], srcip[1], srcip[2], srcip[3]);
+	printf("%d.%d.%d.%d ====\n\x1b[1;37m%s\n\x1b[1;32m=================>\n\n\x1b[0;37m", dstip[0], dstip[1], dstip[2], dstip[3], paquete);
 }
 
 /*
