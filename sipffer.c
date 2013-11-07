@@ -18,7 +18,7 @@
  *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#define VERSION "0.4.5"
+#define VERSION "0.4.6"
 
 #ifdef __GNUC__
 #define DEFAULT_NIC "any"
@@ -165,6 +165,7 @@ void obten_paquete_SIP(u_char *data, const struct pcap_pkthdr *h, const u_char *
 	if ((!p) || (h->len <= (ETH_LEN+IP_MIN_LEN)) || ((unsigned char)cip->version != 4)) {
 		if (p && p + 1) {
 			p += 2;
+			cip = (struct iphdr *)(p+ETH_LEN);
 		} else {
 			if (DEBUG) fprintf(stderr, "Invalid Packet\n");
 			return;
