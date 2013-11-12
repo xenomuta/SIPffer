@@ -1,6 +1,5 @@
 /*
- *    SIPffer: Un sniffer del protocolo SIP
- *    version: 0.4
+ *    SIPffer: A lightweight hightraffic SIP protocol sniffer and traffic analyzer.
  *    https://github.com/xenomuta/SIPffer
  *    XenoMuta / Methylxantina 256mg - http://xenomuta.com - xenmuta[arroba]gmail.com
  *
@@ -18,7 +17,7 @@
  *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#define VERSION "0.4.6"
+#define VERSION "0.5"
 
 #ifdef __GNUC__
 #define DEFAULT_NIC "any"
@@ -48,59 +47,59 @@
 
 #include "sipffer.h"
 
-/* Interfaz Ethernet */
+/* Ethernet Interface */
 static char dev[32];
-/* Archivo pcap */
-static char archivo[128];
-/* Filtro BPF pcap */
-static char filtro[2048];
-/* Puerto SIP */
+/* Pcap file */
+static char file[128];
+/* BPF Filter */
+static char filter[2048];
+/* SIP port */
 static char port[5];
-/* Metodo SIP */
-static char metodo[128];
-/* Respuesta SIP */
-static char respuesta[3];
+/* SIP method */
+static char method[128];
+/* SIP response */
+static char response[3];
 /* Seguir paguete SIP */
-static char seguir, *seguir_id;
-/* Cabecera SIP */
-static char cabecera[128];
-/* Paquetes capturados */
-static int capturados = 0;
-/* Paquetes mostrados */
-static int mostrados = 0;
-/* Manejador del sniffing */
+static char follow, *callID;
+/* SIP header */
+static char header[128];
+/* Packets captured */
+static int captured = 0;
+/* Packets shown */
+static int shown = 0;
+/* Sniffing handler */
 static pcap_t *sniff;
-/* Filtro BPF */
+/* BPF filter program */
 struct bpf_program fp;
-/* Filtro PCRE */
+/* PCRE regexp filter */
 static char regexp[2048];
 static pcre *rx;
 
 /*
- * adios(): Funcion que captura senales UNIX y limpia todo antes de salir
+ * goodBye(): Trap UNIX signals and cleanup before exiting.
  *
- * Parametros:
- * - sig:  Senal capturada por el Sistema.
+ * Parameters:
+ * - sig:  captured system signal.
  */
-void adios(int sig) {
+void goodBye(int sig) {
 	fprintf(stderr, "\x1b[0;37m\n-=[ END OF CAPTURE ]=-\n\n");
 	pcap_breakloop(sniff);
 	pcap_freecode(&fp);
 	pcap_close(sniff);
 
-	fprintf(stderr, "%d packets captured\n%d packets shown\n\n", capturados, mostrados);
+	fprintf(stderr, "%d packets captured\n%d packets shown\n\n", captured, shown);
 	_exit(0);
 }
 
 
 /*
- * obtener_hora(): Retorna la fecha-hora del paquete capturado en formato
+ * getTime(): returns formatted packet date-time
  * Y-m-d hh:mm:ss
  *
- * Parametros:
- * - cabeza:  Cabezera del paquete capturado.
+ * Parameters:
+ * - cap_tv:  Captured packet's timeval
  */
-char *obtener_hora(struct timeval cap_tv) {
+char *getTime(struct timeval cap_tv) {
 	char *buff;
 	time_t curtime;    // Hora actual en milisegundos
 
@@ -114,17 +113,17 @@ char *obtener_hora(struct timeval cap_tv) {
 
 
 /*
- * obten_cabecera_SIP(): Retorna el valor de un cabecera x en un paquete SIP
+ * getSIPHeader(): Returns a header's value in a SIP packet
  *
- * Parametros:
- * - paquete:  paquete crudo
- * - cabecera:    el cabeceradeseado
+ * Parameters:
+ * - packet:				raw packet
+ * - wantedHeader:	desired header
  *
  */
-char *obten_cabecera_SIP(const u_char *paquete, char *quiero_cabecera) {
-	char *crudo, *linea, *cabecera = NULL;
+char *getSIPHeader(const u_char *packet, char *wantedHeader) {
+	char *crudo, *linea, *header = NULL;
 
-	crudo = strdup((char *)paquete);
+	crudo = strdup((char *)packet);
 	linea = strtok(crudo, "\r\n");
 
 	for (;;) {
@@ -133,35 +132,35 @@ char *obten_cabecera_SIP(const u_char *paquete, char *quiero_cabecera) {
 
 		if ((strchr(linea, ':'))) {
 			memset(strchr(linea, ':'), 0, 1);
-			cabecera = linea;
-			if (!strncasecmp(quiero_cabecera, cabecera, strlen(quiero_cabecera))) return (cabecera+strlen(cabecera) + 2);
+			header = linea;
+			if (!strncasecmp(wantedHeader, header, strlen(wantedHeader))) return (header+strlen(header) + 2);
 		}
 	}
-	if (!cabecera) return NULL;
-	cabecera[0] = 0x00;
-	return cabecera;
+	if (!header) return NULL;
+	header[0] = 0x00;
+	return header;
 }
 
 
 /*
- * obten_paquete_SIP(): Extrae la data SIP del paquete
+ * getSIPPacket(): Extracts SIP payload from packet
  *
- * Parametros:
- * - data: Datos pasados a la funcion por parte de pcap_loop()
- * - h:    Cabezera del paquete capturado
- * - p:    Data serializada del paquete
+ * Parameters:
+ * - data: The data passed from pcap_loop()
+ * - h:    Captured packet's header
+ * - p:    Serialized packet data
  */
-void obten_paquete_SIP(u_char *data, const struct pcap_pkthdr *h, const u_char *p) {
-	struct iphdr *cip;			// La IP capturada
-	const u_char *paquete;	// La data decapitada del paquete capturado
+void getSIPPacket(u_char *data, const struct pcap_pkthdr *h, const u_char *p) {
+	struct iphdr *cip;			// Captured IP
+	const u_char *packet;	// Headerless packet
 	unsigned int caplen;
 
-	capturados++;
-	// La interfaz any tiene 2 bytes adicionales en su header
-	if (!strcmp(dev, "any")) p += 2;
+	captured++;
+	// Two additional bytes in 'any' interface
+	if (!strlen(file) && !strcmp(dev, "any")) p += 2;
 
 	cip = (struct iphdr *)(p+ETH_LEN);
-	// Ignora el paquete si no capturo bien o si esta recortado o si no es IPV4
+	// Ignore packet if not correctly captured or truncated or if it isn't IPV4
 	if ((!p) || (h->len <= (ETH_LEN+IP_MIN_LEN)) || ((unsigned char)cip->version != 4)) {
 		if (p && p + 1) {
 			p += 2;
@@ -176,80 +175,83 @@ void obten_paquete_SIP(u_char *data, const struct pcap_pkthdr *h, const u_char *
 		}
 	}
 
-	paquete = (u_char *)malloc(h->len);
-	memset((char *)paquete, 0, h->caplen);
-	strncpy((char *)paquete, (char *)(p + ETH_LEN + IP_MIN_LEN + 8), h->len - (ETH_LEN + IP_MIN_LEN + 8));
-	memset((char *)paquete + (h->len - (ETH_LEN + IP_MIN_LEN + (!strcmp(dev, "any")?10:8))), 0, 1);
+	packet = (u_char *)malloc(h->len);
+	memset((char *)packet, 0, h->caplen);
+	strncpy((char *)packet, (char *)(p + ETH_LEN + IP_MIN_LEN + 8), h->len - (ETH_LEN + IP_MIN_LEN + 8));
+	memset((char *)packet + (h->len - (ETH_LEN + IP_MIN_LEN + (!strcmp(dev, "any")?10:8))), 0, 1);
 
 	caplen = h->caplen;
-	if ((strlen(metodo) > 0) && strncmp((char *)paquete, metodo, strlen(metodo))) return;
-	if (strlen(respuesta) > 0) {
+	if ((strlen(method) > 0) && strncmp((char *)packet, method, strlen(method))) return;
+	if (strlen(response) > 0) {
 		if (caplen < 4) return;
-		if (strncmp((char *)paquete, "SIP/", 4)) return;
-		if (strncmp((char *)paquete + 8, respuesta, 3)) return;
+		if (strncmp((char *)packet, "SIP/", 4)) return;
+		if (strncmp((char *)packet + 8, response, 3)) return;
 	}
 	if (strlen(regexp) > 0) {
-		if ((strlen(cabecera) > 0) && !rx_match(obten_cabecera_SIP(paquete, cabecera))) return;
-		if (!rx_match((char *)paquete)) return;
+		if ((strlen(header) > 0) && !rx_match(getSIPHeader(packet, header))) return;
+		if (!rx_match((char *)packet)) return;
 	}
-	if (seguir) {
-		if (seguir == 1) {
-			if (!(seguir_id = obten_cabecera_SIP(paquete, "Call-ID"))) {
-				seguir_id = obten_cabecera_SIP(paquete, "call-id");
+	if (follow) {
+		if (follow == 1) {
+			if (!(callID = getSIPHeader(packet, "Call-ID"))) {
+				callID = getSIPHeader(packet, "call-id");
 			}
-			if (seguir_id) {
-				seguir = 2;
+			if (callID) {
+				follow = 2;
 			} else return;
 		}
-		if (seguir == 2) {
-			char *call_id = obten_cabecera_SIP(paquete, "Call-ID");
-			if (!call_id)	call_id = obten_cabecera_SIP(paquete, "call-id");
+		if (follow == 2) {
+			char *call_id = getSIPHeader(packet, "Call-ID");
+			if (!call_id)	call_id = getSIPHeader(packet, "call-id");
 			if (!call_id)	return;
-			if (strcmp(call_id, seguir_id)) return;
+			if (strcmp(call_id, callID)) return;
 		}
 	}
 
-	mostrados++;
+	shown++;
 	u_char *srcip = (u_char *)&cip->saddr;
 	u_char *dstip = (u_char *)&cip->daddr;
 
-	printf("\x1b[1;32m<==[%d bytes]==[%s] : %d.%d.%d.%d => ", caplen, obtener_hora(h->ts), srcip[0], srcip[1], srcip[2], srcip[3]);
-	printf("%d.%d.%d.%d ====\n\x1b[1;37m%s\n\x1b[1;32m=================>\n\n\x1b[0;37m", dstip[0], dstip[1], dstip[2], dstip[3], paquete);
+	printf("\x1b[1;32m<==[%d bytes]==[%s] : %d.%d.%d.%d => ", caplen, getTime(h->ts), srcip[0], srcip[1], srcip[2], srcip[3]);
+	printf("%d.%d.%d.%d ====\n\x1b[1;37m%s\n\x1b[1;32m=================>\n\n\x1b[0;37m", dstip[0], dstip[1], dstip[2], dstip[3], packet);
 }
 
 /*
- * rx_match: verifica si el paquete coincide con la expresión regular PCRE
+ * rx_match: Verifies if packet's contents matches a pcre regexp.
+ *
+ * parameters:
+ * - packet: the packet to match to
  */
-int rx_match (char *paquete) {
+int rx_match (char *packet) {
   const char *error;
   int erroffset;
-  int rc = pcre_exec(rx, NULL, paquete, strlen(paquete), 0, 0, NULL, 0);
+  int rc = pcre_exec(rx, NULL, packet, strlen(packet), 0, 0, NULL, 0);
   return rc == 0;
 }
 
 /*
- * payola(): El nombre lo dice todo
+ * payola(): El nombre lo dice todo :)
  */
 void payola() {
 	fprintf(stderr, "SIPffer v%s: A SIP protocol sniffer\nXenoMuta.com - https://github.com/xenomuta/SIPffer\n\n", VERSION, 64);
 }
 
 /*
- * usage(): El nombre lo dice todo
+ * usage(): Displays usage
  */
 void usage() {
-	fprintf(stderr, "Usage: sipffer [OPTIONS] -i interfaz [regular expression (PCRE)]\n");
+	fprintf(stderr, "Usage: sipffer [OPTIONS] -i interface [regular expression (PCRE)]\n");
 	fprintf(stderr, "   or: sipffer [OPTIONS] -a file [regular expression (PCRE)]\n\n");
 	fprintf(stderr, " -i interface:  \tEthernet Interface to sniff\n");
 	fprintf(stderr, " -a/--file file:\tArchived PCAP file to read\n\n");
 	fprintf(stderr, "OPTIONS:\n");
 	fprintf(stderr, " -p port:       \tSpecify port to filtrar on ( defaults to udp/5060 )\n");
 	fprintf(stderr, " -f BPF filter: \tFiltro BPF adicional ( formato tcpdump )\n");
-	fprintf(stderr, " -m method:     \tFiltra por metodo SIP (INVITE,REGISTER,\n");
-	fprintf(stderr, "                \t\tACK,CANCEL,BYE or OPTIONS)\n");
+	fprintf(stderr, " -m method:     \tFiltra por method SIP (INVITE,REGISTER,\n");
+	fprintf(stderr, "                \t\tACK,SUBSCRIBE,CANCEL,BYE or OPTIONS)\n");
 	fprintf(stderr, " -r response:   \tFilter by (numerical) response (200, 404, etc...)\n");
-	// /* Pronto ;) , estoy muy vago */
-	// fprintf(stderr, " -e archivo:     \tEscribe captura de paquetes a archivo\n");
+	// /* Soon ;) , I'm too busy or lazy */
+	// fprintf(stderr, " -w file:     \tWrite the packets to a .pcap file\n");
 	fprintf(stderr, " -s/--follow:   \tCapture the first matching packet and follow it's session (Call-ID)\n");
 	fprintf(stderr, " -c header      \tOnly match regular expression with header specified\n");
 	fprintf(stderr, "                \t\tej. (From, To, Contact, etc...)\n");
@@ -258,22 +260,22 @@ void usage() {
 
 int main(int argc, char *argv[]) {
 	char errbuf[PCAP_ERRBUF_SIZE];
-	bpf_u_int32 ip;		// Nuestra IP
-	bpf_u_int32 mask;	// Nuestra Mascara
+	bpf_u_int32 ip;		// Our IP
+	bpf_u_int32 mask;	// Our mask
 	int i;
 
 	payola();
 	memset((char *)&port, 0, sizeof(port));
 	strncpy((char *)&port, "5060", sizeof(port));
 	memset((char *)&dev, 0, sizeof(dev));
-	memset((char *)&archivo, 0, sizeof(archivo));
-	memset((char *)&metodo, 0, sizeof(metodo));
-	memset((char *)&respuesta, 0, sizeof(respuesta));
+	memset((char *)&file, 0, sizeof(file));
+	memset((char *)&method, 0, sizeof(method));
+	memset((char *)&response, 0, sizeof(response));
 	memset((char *)&regexp, 0, sizeof(regexp));
-	memset((char *)&cabecera, 0, sizeof(cabecera));
-	memset((char *)&filtro, 0, sizeof(filtro));
-	seguir = 0;
-	/* Snifea en todas por default */
+	memset((char *)&header, 0, sizeof(header));
+	memset((char *)&filter, 0, sizeof(filter));
+	follow = 0;
+	/* Sniff on all interfaces by default ( Linux Only ) */
 	strncpy((char *)&dev, DEFAULT_NIC, sizeof(dev));
 
 	for (i = 1; i < argc; i++) {
@@ -289,11 +291,11 @@ int main(int argc, char *argv[]) {
 			return 0;
 		}
 		if (!strcmp(argv[i], "-s") || !strcmp(argv[i], "--follow")) {
-			seguir = 1;
+			follow = 1;
 			continue;
 		}
 		if (!strcmp(argv[i], "-a") || !strcmp(argv[i], "--file")) {
-			strncpy((char *)&archivo, argv[++i], sizeof(archivo));
+			strncpy((char *)&file, argv[++i], sizeof(file));
 			continue;
 		}
 		if (!strcmp(argv[i], "-i")) {
@@ -305,31 +307,31 @@ int main(int argc, char *argv[]) {
 			continue;
 		}
 		if (!strcmp(argv[i], "-c")) {
-			strncpy((char *)&cabecera, argv[++i], sizeof(cabecera));
+			strncpy((char *)&header, argv[++i], sizeof(header));
 			continue;
 		}
 		if (!strcmp(argv[i], "-f")) {
-			strncpy((char *)&filtro, argv[++i], sizeof(filtro));
+			strncpy((char *)&filter, argv[++i], sizeof(filter));
 			continue;
 		}
 		if (!strcmp(argv[i], "-m")) {
-			strncpy((char *)&metodo, argv[++i], sizeof(metodo));
+			strncpy((char *)&method, argv[++i], sizeof(method));
 			continue;
 		}
 		if (!strcmp(argv[i], "-r")) {
-			strncpy((char *)&respuesta, argv[++i], sizeof(respuesta));
+			strncpy((char *)&response, argv[++i], sizeof(response));
 			continue;
 		}
 	}
 
-	if ((strlen(cabecera) > 0) && (strlen(regexp) == 0)) {
+	if ((strlen(header) > 0) && (strlen(regexp) == 0)) {
 		fprintf(stderr, "ERROR: Must specify regular expression when using '-c' option\n\n");
 		return 2;
 	}
 
 
 	if (strlen(regexp) > 0) {	
-		// Fabrica la expresión regular
+		// Build the regular expression
 	  const char *rxerror;
 	  int rxerroffset;
 	  rx = pcre_compile((char *)&regexp, PCRE_CASELESS, &rxerror, &rxerroffset, NULL);
@@ -339,39 +341,39 @@ int main(int argc, char *argv[]) {
 	  }
 	}
 
-	// Fabrica el filtro
-	char filtrofinal[2048];
-	memset(filtrofinal, 0, 2048);
-	if (strlen(filtro) > 0) {
-		snprintf((char *)&filtrofinal, sizeof(filtrofinal), "udp and port %s and %s", port, filtro);
+	// Build the BPF filter
+	char filterfinal[2048];
+	memset(filterfinal, 0, 2048);
+	if (strlen(filter) > 0) {
+		snprintf((char *)&filterfinal, sizeof(filterfinal), "udp and port %s and %s", port, filter);
 	} else {
-		snprintf((char *)&filtrofinal, sizeof(filtrofinal), "udp and port %s", port);
+		snprintf((char *)&filterfinal, sizeof(filterfinal), "udp and port %s", port);
 	}
 
-	// Preparate las trampas de senal
-	signal(SIGABRT, &adios);
-	signal(SIGTERM, &adios);
-	signal(SIGSTOP, &adios);
-	signal(SIGKILL, &adios);
-	signal(SIGINT, &adios);
+	// Prepare signal traps
+	signal(SIGABRT, &goodBye);
+	signal(SIGTERM, &goodBye);
+	signal(SIGSTOP, &goodBye);
+	signal(SIGKILL, &goodBye);
+	signal(SIGINT, &goodBye);
 
-	if (strlen(archivo) > 0) {
-		if ((sniff = pcap_open_offline(archivo, errbuf))==NULL) {
+	if (strlen(file) > 0) {
+		if ((sniff = pcap_open_offline(file, errbuf)) == NULL) {
 			fprintf(stderr, "ERROR: Can't open file '%s': %s\n\n", dev, errbuf);
 			return 2;
 		}
 	} else {
-		if ((sniff = pcap_open_live(dev, SNAP_LEN, 1, 1000, errbuf))==NULL) {
+		if ((sniff = pcap_open_live(dev, SNAP_LEN, 1, 1000, errbuf)) == NULL) {
 			fprintf(stderr, "ERROR: Can't open interface '%s': %s\n\n", dev, errbuf);
 			return 2;
 		}
 		if (!strcmp(dev, "any")) {
-			if ((pcap_set_datalink(sniff, DLT_LINUX_SLL))==-1) {
+			if ((pcap_set_datalink(sniff, DLT_LINUX_SLL)) == -1) {
 				fprintf(stderr, "ERROR: Can't assign link type DTL_LINUX_SLL\n\n");
 				return 2;
 			}
 		}
-		// Averigua nuestra IP/Mascara
+		// Find out our IP and mask
 		if (pcap_lookupnet(dev, &ip, &mask, errbuf) == -1) {
 			fprintf(stderr, "WARNING: Can't find IP/Netmask for interface '%s'\n\n", dev);
 			mask = 0;
@@ -379,40 +381,40 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	// Compila el filtro
-	if (pcap_compile(sniff, &fp, filtrofinal, 1, mask) == -1) {
-		fprintf(stderr, "ERROR: Can't parse BPF filter \"%s\": %s\n\n", filtro, pcap_geterr(sniff));
+	// Compile filter
+	if (pcap_compile(sniff, &fp, filterfinal, 1, mask) == -1) {
+		fprintf(stderr, "ERROR: Can't parse BPF filter \"%s\": %s\n\n", filter, pcap_geterr(sniff));
 		return 2;
 	}
 
-	// Aplica el filtro a la captura
+	// Apply filter to capture
 	if (pcap_setfilter(sniff, &fp) == -1) {
-		fprintf(stderr, "ERROR: Can't apply BPF filter \"%s\": %s\n\n", filtro, pcap_geterr(sniff));
+		fprintf(stderr, "ERROR: Can't apply BPF filter \"%s\": %s\n\n", filter, pcap_geterr(sniff));
 		return 2;
 	}
 
-	// Todo Bien
+	// All good
 	fprintf(stderr, "OK, sniffing interface '%s' on port '%s'\n", dev, port);
-	if (strlen(filtro) > 0) fprintf(stderr, "BPF filter: \"%s\"\n", filtrofinal);
-	if (strlen(metodo) > 0) fprintf(stderr, "Only packets with SIP method: %s\n", metodo);
-	if (strlen(respuesta) > 0) fprintf(stderr, "Only Packets with SIP response: %s\n", respuesta);
+	if (strlen(filter) > 0) fprintf(stderr, "BPF filter: \"%s\"\n", filterfinal);
+	if (strlen(method) > 0) fprintf(stderr, "Only packets with SIP method: %s\n", method);
+	if (strlen(response) > 0) fprintf(stderr, "Only Packets with SIP response: %s\n", response);
 	if (strlen(regexp) > 0) {
 		fprintf(stderr, "Only packets matching regular expression: /%s/", regexp);
-		if (strlen(cabecera) > 0) fprintf(stderr, " in header field: %s\n", cabecera);
+		if (strlen(header) > 0) fprintf(stderr, " in header field: %s\n", header);
 		else fprintf(stderr, "\n");
 	}
-	if (seguir) {
+	if (follow) {
 		fprintf(stderr, "Follow first packet with related packets by Call-ID.\n");
 	}
 
-	// Captura y parsea
-	int res = pcap_loop(sniff, 0, obten_paquete_SIP, NULL);
+	// Capture and parse
+	int res = pcap_loop(sniff, 0, getSIPPacket, NULL);
 
 	pcap_freecode(&fp);
 	pcap_close(sniff);
 
 	if (res > 0) {
-		fprintf(stderr, "%d packets captured\n%d packets shown\n\n", res, mostrados);
+		fprintf(stderr, "%d packets captured\n%d packets shown\n\n", res, shown);
 	}
 	return (res >= 0)?0:2;
 }
