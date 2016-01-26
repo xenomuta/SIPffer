@@ -1,12 +1,10 @@
 # SIPffer
 **SIPffer** (SIP + sniffer): A SIP protocol sniffer for quick and smart troubleshooting.
 
-*XenoMuta <xenomuta@gmail.com> - Metylxantina 256mg 2013 - <http://xenomuta.com/>*
-
 ### What's SIPffer
 
-SIPffer is an easy to use tool for troubleshooting issues with SIP traffice (switches, proxies, SBCs, VoIP Servers, PBXs, etc..).
-It comes very handy in high traffic and remote (terminal) environments to do quick and smart diagnostic on remote ends, terminals compared to otherwise harder to run or install WireShark or other heavy all-purpose traffic analysis tools.
+SIPffer is an easy to use command line tool for troubleshooting issues with SIP traffic (switches, proxies, SBCs, VoIP Servers, PBXs, etc..).
+It comes very handy in high traffic and other noisy environments to do quick and smart diagnostics on remote ends, compared to otherwise heavier and harder to run or install WireShark or other all-purpose traffic analysis tools.
 
 It is distributed under the GPLv3 license.
 
@@ -18,7 +16,6 @@ It is distributed under the GPLv3 license.
 * Offline analysis of tcpdump (`.pcap`) capture files.
 * Filter by SIP method (`REGISTER`, `INVITE`, `OPTIONS`, `BYE`, etc).
 * Filter by SIP response (`200`, `302`, `404`, etc).
-* Offline analysis of tcpdump (`.pcap`) capture files.
 
 ### Installing
 
@@ -37,4 +34,5 @@ sudo make install
 * The Digium / Asterisk community, which inspired the creation of this tool ( with its `sip set debug` feature in `chan_sip.c` ).
 * Nathan Robles, my most notorious beta-tester... ;-)
 * Juan Ases Garcia, for his excelent suggestions & feedback.
+* The [Starvox](http://starvox.com) team and user base.
 
