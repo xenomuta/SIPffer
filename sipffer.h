@@ -1,7 +1,7 @@
 /*
- *    SIPffer: Un sniffer del protocolo SIP
- *    version: 0.4
- *    XenoMuta / Methylxantina 256mg xenmuta[arroba]gmail.com http://xenomuta.com/
+ *    SIPffer: A SIP protocol sniffer for quick and smart troubleshooting.
+ *    https://github.com/xenomuta/SIPffer
+ *    XenoMuta / Methylxantina 256mg - http://xenomuta.com - xenmuta@gmail.com
  *
  *    SIPffer is free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by

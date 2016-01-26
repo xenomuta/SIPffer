@@ -1,7 +1,7 @@
 /*
- *    SIPffer: A lightweight hightraffic SIP protocol sniffer and traffic analyzer.
+ *    SIPffer: A SIP protocol sniffer for quick and smart troubleshooting.
  *    https://github.com/xenomuta/SIPffer
- *    XenoMuta / Methylxantina 256mg - http://xenomuta.com - xenmuta[arroba]gmail.com
+ *    XenoMuta / Methylxantina 256mg - http://xenomuta.com - xenmuta@gmail.com
  *
  *    SIPffer is free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
  *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#define VERSION "0.5"
+#define VERSION "1.0.0"
 
 #ifdef __GNUC__
 #define DEFAULT_NIC "any"
@@ -233,7 +233,7 @@ int rx_match (char *packet) {
  * payola(): El nombre lo dice todo :)
  */
 void payola() {
-	fprintf(stderr, "SIPffer v%s: A SIP protocol sniffer\nXenoMuta.com - https://github.com/xenomuta/SIPffer\n\n", VERSION, 64);
+	fprintf(stderr, "SIPffer v%s: A SIP protocol sniffer\nXenoMuta.com - https://github.com/xenomuta/SIPffer\n\n", VERSION);
 }
 
 /*
