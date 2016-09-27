@@ -19,6 +19,14 @@
  */
 #define DEBUG 1
 
+#define VERSION "1.0.2"
+
+#ifdef __GNUC__
+#define DEFAULT_NIC "any"
+#else
+#define DEFAULT_NIC "en0"
+#endif
+
 #define MAX_SIMULT 2048
 
 #define ETH_LEN    14

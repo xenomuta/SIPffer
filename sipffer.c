@@ -17,14 +17,6 @@
  *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#define VERSION "1.0.0"
-
-#ifdef __GNUC__
-#define DEFAULT_NIC "any"
-#else
-#define DEFAULT_NIC "en0"
-#endif
-
 #include <pcre.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -211,9 +203,15 @@ void getSIPPacket(u_char *data, const struct pcap_pkthdr *h, const u_char *p) {
 	shown++;
 	u_char *srcip = (u_char *)&cip->saddr;
 	u_char *dstip = (u_char *)&cip->daddr;
+	int i = 0;
+	char color = 0;
+	for (i = 0; i < 4; i++) {
+		color += srcip[i];
+	}
+	color = 30 + (color % 6 + 1);
 
 	printf("\x1b[1;32m<==[%d bytes]==[%s] : %d.%d.%d.%d => ", caplen, getTime(h->ts), srcip[0], srcip[1], srcip[2], srcip[3]);
-	printf("%d.%d.%d.%d ====\n\x1b[1;37m%s\n\x1b[1;32m=================>\n\n\x1b[0;37m", dstip[0], dstip[1], dstip[2], dstip[3], packet);
+	printf("%d.%d.%d.%d ====\n\x1b[1;%dm%s\n\x1b[1;32m=================>\n\n\x1b[0;37m", dstip[0], dstip[1], dstip[2], dstip[3], color, packet);
 }
 
 /*
