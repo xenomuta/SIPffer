@@ -47,4 +47,3 @@ struct iphdr {
   struct  in_addr saddr;
   struct  in_addr daddr; 
 };
-
