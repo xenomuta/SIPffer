@@ -180,8 +180,8 @@ void getSIPPacket(u_char *data, const struct pcap_pkthdr *h, const u_char *p) {
 		if (strncmp((char *)packet + 8, response, 3)) return;
 	}
 	if (strlen(regexp) > 0) {
-		if ((strlen(header) > 0) && !rx_match(getSIPHeader(packet, header))) return;
-		if (!rx_match((char *)packet)) return;
+		if ((strlen(header) > 0) && !rpmatch(getSIPHeader(packet, header))) return;
+		if (!rpmatch((char *)packet)) return;
 	}
 	if (follow) {
 		if (follow == 1) {
