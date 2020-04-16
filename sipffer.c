@@ -212,6 +212,7 @@ void getSIPPacket(u_char *data, const struct pcap_pkthdr *h, const u_char *p) {
 
 	printf("\x1b[0;37m<==[%d bytes]==[%s] : %d.%d.%d.%d => ", caplen, getTime(h->ts), srcip[0], srcip[1], srcip[2], srcip[3]);
 	printf("%d.%d.%d.%d ====\n\x1b[1;%dm%s\n\x1b[0;37m=================>\n\n\x1b[0m", dstip[0], dstip[1], dstip[2], dstip[3], color, packet);
+	fflush(stdout);
 }
 
 /*
